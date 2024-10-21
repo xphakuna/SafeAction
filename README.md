@@ -12,7 +12,7 @@ sa.RemoveAction(null, act1);
 sa.Invoke();
 ```
 # 解决痛点
-## 解决痛点之action的exception
+## 解决痛点之执行某一个action的时候出现exception
 ```cshar
 System.Action SystemAction = null;
 SystemAction += act1;
@@ -45,4 +45,4 @@ SystemAction += act1;
 SystemAction += act1;
 SystemAction.Invoke();
 ```
-上面的代码，如果act1会执行两遍。用safeAction可以解决这个问题
+上面的代码，如果用系统的action，act1会执行两遍。用safeAction可以解决这个问题

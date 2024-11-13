@@ -110,6 +110,12 @@ namespace SafeAction
 		SafeActionImpl<T1> action = new SafeActionImpl<T1>();
 		SafeActionImpl<T1> actionAfter = new SafeActionImpl<T1>();
 
+		string debugName;
+		public SafeAction(string debugName = null)
+		{
+			this.debugName = debugName;
+		}
+
 		public void AddAction(System.Object go, Action<T1> act, int seq = 0)
 		{
 			if (seq > 0)
@@ -137,9 +143,27 @@ namespace SafeAction
 
 		public void Invoke(T1 t1, string debugStr = "")
 		{
+			var n = GetActionCount();
+			if (n == 0)
+				return;
+			//
+			var profileFunc = SafeAction.S_getProfileFunc();
+			System.Diagnostics.Stopwatch sw = null;
+			if (profileFunc != null && string.IsNullOrEmpty(debugName) == false)
+			{
+				sw = new System.Diagnostics.Stopwatch();
+				sw.Start();
+			}
+			//
 			actionBefore.Invoke(t1, debugStr);
 			action.Invoke(t1, debugStr);
 			actionAfter.Invoke(t1, debugStr);
+			//
+			if (sw != null)
+			{
+				sw.Stop();
+				profileFunc.InvokeSafely((name: debugName, count: n, elapse_ms: sw.ElapsedMilliseconds));
+			}
 		}
 
 		public int GetActionCount()

@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
+using NuGet.Frameworks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace TestSafeAction
 	public class TestSafeAction
 	{
 		[TestMethod]
-		public async Task TestAddRemove_noObj_0()
+		public async Task TestAddRemove_noObj()
 		{
 			var sa = new SafeAction.SafeAction();
 			int n1 = 0;
@@ -35,7 +36,7 @@ namespace TestSafeAction
 		}
 
 		[TestMethod]
-		public async Task TestAddRemove_order_noObj_0()
+		public async Task TestAddRemove_order_noObj()
 		{
 			var sa = new SafeAction.SafeAction();
 			List<int> list = new List<int>();
@@ -66,7 +67,7 @@ namespace TestSafeAction
 		}
 
 		[TestMethod]
-		public async Task TestException_noObj_0()
+		public async Task TestException_noObj()
 		{
 			var sa = new SafeAction.SafeAction();
 			int n1 = 0;
@@ -98,7 +99,7 @@ namespace TestSafeAction
 		}
 
 		[TestMethod]
-		public async Task TestAddSameAction_noObj_0()
+		public async Task TestAddSameAction_noObj()
 		{
 			var sa = new SafeAction.SafeAction();
 			int n1 = 0;
@@ -122,7 +123,7 @@ namespace TestSafeAction
 		}
 
 		[TestMethod]
-		public async Task TestRemoveActionByObj_0()
+		public async Task TestRemoveActionByObj()
 		{
 			var sa = new SafeAction.SafeAction();
 			int n1 = 0;
@@ -144,6 +145,56 @@ namespace TestSafeAction
 		class BindObj
 		{
 			public bool isValide;
+		}
+
+		[TestMethod]
+		public async Task TestProfile()
+		{
+			var sa = new SafeAction.SafeAction("test1");
+			int n1 = 0;
+			int n2 = 0;
+
+			var act1 = () => { n1++; };
+			var act2 = () => { n2++; };
+
+			sa.AddAction(null, act1);
+			sa.AddAction(null, act2);
+
+			var sb = new SafeAction.SafeAction("test2");
+			sb.AddAction(null, act1);
+
+			var sc = new SafeAction.SafeAction();
+			sc.AddAction(null, act1);
+
+			Dictionary<string, int> dictCount = new Dictionary<string, int>();
+			Dictionary<string, long> dictTime = new Dictionary<string, long>();
+
+			SafeAction.SafeAction.S_addProfileFunc(((string name, int count, long elapse_ms) param) =>
+			{
+				Assert.AreEqual(false, string.IsNullOrEmpty(param.name), "should not null");
+					
+				if (dictCount.ContainsKey(param.name))
+					dictCount[param.name] += param.count;
+				else
+					dictCount[param.name] = param.count;
+
+				if (dictTime.ContainsKey(param.name))
+					dictTime[param.name] += param.elapse_ms;
+				else
+					dictTime[param.name] = param.elapse_ms;
+			});
+
+			for (int i = 0; i < 10; i++)
+			{
+				sa.Invoke();
+				sb.Invoke();
+				sc.Invoke();
+
+				Assert.AreEqual((i + 1) * 2, dictCount["test1"]);
+				Assert.AreEqual((i + 1) * 1, dictCount["test2"]);
+			}
+
+
 		}
 	}
 }

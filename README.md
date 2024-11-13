@@ -46,3 +46,11 @@ SystemAction += act1;
 SystemAction.Invoke();
 ```
 上面的代码，如果用系统的action，act1会执行两遍。用safeAction可以解决这个问题
+## 解决痛点之性能分析
+有的action会被重复invoke多次，怎么性能分析呢？
+```cshar
+// function to profile, first param is the name of the action, second param is the call count, third param is elpased time in ms
+static Action<(string name, int count, long elapse_ms)> s_profileFunc;
+public static void S_addProfileFunc(Action<(string name, int count, long elapse_ms)> func)
+```
+在S_addProfileFunc的函数里面处理就可以了

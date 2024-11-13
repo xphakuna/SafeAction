@@ -105,70 +105,16 @@ namespace SafeAction
 	}
 
 
-	public class SafeAction
+	public partial class SafeAction
 	{
 		SafeActionImpl actionBefore = new SafeActionImpl();
 		SafeActionImpl action = new SafeActionImpl();
 		SafeActionImpl actionAfter = new SafeActionImpl();
 
-		static Action<Exception> s_logExceptionFunc;
-		public static void S_addLogFunction(Action<Exception> e)
+		string debugName;
+		public SafeAction(string debugName = null)
 		{
-			s_logExceptionFunc = e;
-		}
-		public static Action<Exception> S_getLogFunction()
-		{
-			return s_logExceptionFunc;
-		}
-
-		static Dictionary<System.Type, Func<System.Object, bool>> s_allCachedCheckFunc = new Dictionary<System.Type, Func<System.Object, bool>>();
-		static List<(System.Type type, Func<System.Object, bool> func)> s_allCheckFunc = new List<(Type type, Func<System.Object, bool> func)>();
-
-		public static void S_clearCheckValideFunc()
-		{
-			s_allCheckFunc.Clear();
-			s_allCachedCheckFunc.Clear();
-		}
-		public static void S_addCheckValideFunc(System.Type t, Func<System.Object, bool> func)
-		{
-			if (s_allCheckFunc.Exists(a => a.type == t))
-				return;
-			s_allCheckFunc.Add((type: t, func: func));
-			s_allCheckFunc.Sort((a, b) =>
-			{
-				// a inherit from b, a is before b
-				if (a.type.IsSubclassOf(b.type))
-					return -1;
-				if (b.type.IsSubclassOf(a.type))
-					return 1;
-				return a.type.GUID.CompareTo(b.type.GUID);
-			});
-			s_allCachedCheckFunc.Clear();
-		}
-
-		public static Func<System.Object, bool> GetCheckValideFunc(System.Type t)
-		{
-			// from cache
-			if (s_allCachedCheckFunc.ContainsKey(t))
-				return s_allCachedCheckFunc[t];
-			var func = GetCheckValideFunc2(t);
-			s_allCachedCheckFunc[t] = func;
-			return func;
-		}
-
-		static Func<System.Object, bool> GetCheckValideFunc2(System.Type t)
-		{
-			foreach (var checkFunc in s_allCheckFunc)
-			{
-				if (t.IsSubclassOf(checkFunc.type) || t == checkFunc.type)
-					return checkFunc.func;
-			}
-			return CheckValide;
-		}
-
-		static bool CheckValide(System.Object obj)
-		{
-			return obj != null;
+			this.debugName = debugName;
 		}
 
 		public void AddAction(System.Object go, Action act, int seq = 0)
@@ -198,9 +144,27 @@ namespace SafeAction
 
 		public void Invoke(string debugStr = "")
 		{
+			var n = GetActionCount();
+			if (n == 0)
+				return;
+			//
+			var profileFunc = SafeAction.S_getProfileFunc();
+			System.Diagnostics.Stopwatch sw = null;
+			if (profileFunc != null && string.IsNullOrEmpty(debugName) == false)
+			{
+				sw = new System.Diagnostics.Stopwatch();
+				sw.Start();
+			}
+			//
 			actionBefore.Invoke(debugStr);
 			action.Invoke(debugStr);
 			actionAfter.Invoke(debugStr);
+			//
+			if (sw != null)
+			{
+				sw.Stop();
+				profileFunc.InvokeSafely((name: debugName, count: n, elapse_ms: sw.ElapsedMilliseconds));
+			}
 		}
 
 		public int GetActionCount()
